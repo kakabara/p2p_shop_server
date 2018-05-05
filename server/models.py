@@ -15,7 +15,7 @@ class Product:
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    price = db.Column(db.Double)
+    price = db.Column(db.Float)
     description = db.Column(db.String)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
