@@ -18,6 +18,8 @@ class Product(db.Model):
     price = db.Column(db.Float)
     description = db.Column(db.String)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    deleted_at = db.Column(db.DateTime, default=None)
+    bought_at = db.Column(db.DateTime, default=None)
 
     user = db.relationship('User')
 
