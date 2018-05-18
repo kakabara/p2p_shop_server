@@ -1,8 +1,9 @@
 from flask import Flask
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
-
 from server.config import Config
+import os
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
 
 app = Flask(__name__)
 
@@ -12,4 +13,4 @@ db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
 
-from server import routes
+from server import routes, models

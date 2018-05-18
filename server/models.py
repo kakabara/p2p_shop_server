@@ -55,3 +55,5 @@ class Authorization(db.Model):
     auth_token = db.Column(db.String)
 
     user = db.relationship('User')
+
+
