@@ -12,7 +12,7 @@ def not_found(error):
 @app.route('/<entity>/', methods=['GET'])
 @app.route('/<entity>/<entity_id>', methods=['GET'])
 def get_entities(entity: str, entity_id: int = None):
-    result = BaseController.base_get(entity, entity_id)
+    result = BaseController.base_get(entity, entity_id, request.args)
     if result:
         return make_response(jsonify(result))
     else:

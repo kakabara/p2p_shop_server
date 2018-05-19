@@ -22,6 +22,17 @@ table_name_class = get_dict_table_name_to_class()
 
 class BaseController:
     @staticmethod
+    def apply_filtered(entity_class, query, filters: dict):
+        for filter_key in filters:
+            value = filters[filter_key]
+            column = getattr(entity_class, filter_key, None)
+            filt = getattr(column, '__eq__')(value)
+            query = query.filter(filt)
+        return query
+
+
+
+    @staticmethod
     def create_entity(entity_class, fields: dict):
         entity = entity_class()
         for field in fields:
@@ -37,23 +48,18 @@ class BaseController:
         return entity
 
     @staticmethod
-    def base_get(entity: str, entity_id: int = None):
+    def base_get(entity: str, entity_id: int = None, filters: dict = dict()):
         entity_class = table_name_class.get(entity)
         #
         if not entity_class:
             return None
         if entity_id:
             result = entity_class.query.filter(entity_class.id == entity_id).one_or_none()
-            if result:
-                view = ViewBase.serialize([result])
-            else:
-                return {}
         else:
-            result = entity_class.query.all()
-            if result:
-                view = ViewBase.serialize(result)
-            else:
-                return {}
+            query = entity_class.query
+            query = BaseController.apply_filtered(entity_class, query, filters)
+            result = query.all()
+        view = ViewBase.serialize(result)
         return view
 
     @staticmethod
