@@ -57,3 +57,12 @@ class Authorization(db.Model):
     user = db.relationship('User')
 
 
+class Image(db.Model):
+    __tablename__ = 'images'
+    _model_type = 'image'
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(255))
+    hash = db.Column(db.String(255))
+    is_original = db.Column(db.Boolean)
+
+

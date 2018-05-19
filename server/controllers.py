@@ -2,6 +2,8 @@ import json
 from .models import *
 from server import db
 from .views import ViewBase
+import hashlib
+from sqlalchemy import and_
 
 
 def get_dict_table_name_to_class():
@@ -100,3 +102,61 @@ class BaseController:
         db.session.delete(entity)
         db.session.commit()
         return {"status": "done"}
+
+
+class ImagesController:
+    @staticmethod
+    def get_images(image_hash):
+        image = Image.query.filter(Image.hash == image_hash).one_or_none()
+        if image:
+            return image.path
+        return None
+
+
+class UserController:
+    @staticmethod
+    def create_user(data):
+        login = data.get('login')
+        password = data.get('password')
+        phone = data.get('phone')
+
+        if login and password and phone:
+            exist_user = User.query.filter(User.login == login).one_or_none()
+            if exist_user:
+                return {'error': 'this login has been used'}
+            else:
+                password_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
+
+                new_user = User(login=login, password_hash=password_hash, phone=phone)
+
+                db.session.add(new_user)
+                db.session.commit()
+
+                return ViewBase.serialize(new_user)
+        return None
+
+
+class AuthorizationController:
+    @staticmethod
+    def authorize(data):
+        login = data.get('login')
+        password = data.get('password')
+        password_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
+
+        is_user = User.query.filter(and_(User.login == login, User.password_hash == password_hash)).one_or_none()
+
+        if is_user:
+            token = hashlib.sha1((login + password).encode('utf-8')).hexdigest()
+            if not AuthorizationController.check_auth(token):
+                new_auth = Authorization(user=is_user, auth_token=token)
+                db.session.add(new_auth)
+                db.session.commit()
+            return {'authToken': token}
+        return None
+
+    @staticmethod
+    def check_auth(token):
+        auth = Authorization.query.filter(Authorization.auth_token == token).one_or_none()
+        if auth:
+            return token
+        return None
