@@ -4,6 +4,8 @@ from server import db
 from .views import ViewBase
 import hashlib
 from sqlalchemy import and_
+from werkzeug.utils import secure_filename
+import os
 
 
 def get_dict_table_name_to_class():
@@ -105,6 +107,13 @@ class BaseController:
 
 
 class ImagesController:
+    ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+
+    @staticmethod
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ImagesController.ALLOWED_EXTENSIONS
+
     @staticmethod
     def get_images(image_hash):
         image = Image.query.filter(Image.hash == image_hash).one_or_none()
@@ -112,6 +121,20 @@ class ImagesController:
             return image.path
         return None
 
+    @staticmethod
+    def save_image(request):
+        if request.method == 'POST':
+            # check if the post request has the file part
+            if 'file' not in request.files:
+                return {'error': 'bad request'}
+            file = request.files['file']
+            # if user does not select file, browser also
+            # submit an empty part without filename
+            if file.filename == '':
+                return {'error': 'bad request'}
+            if file and ImagesController.allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
 class UserController:
     @staticmethod
