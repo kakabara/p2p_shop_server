@@ -20,8 +20,10 @@ class Product(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     deleted_at = db.Column(db.DateTime, default=None)
     bought_at = db.Column(db.DateTime, default=None)
+    image_hash = db.Column(db.String(255), db.ForeignKey('images.hash'))
 
     user = db.relationship('User')
+    image = db.relationship('Image')
 
 
 class Commentary(db.Model):
@@ -62,7 +64,7 @@ class Image(db.Model):
     _model_type = 'image'
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(255))
-    hash = db.Column(db.String(255))
-    is_original = db.Column(db.Boolean)
+    hash = db.Column(db.String(255), unique=True)
+
 
 

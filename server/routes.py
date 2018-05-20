@@ -6,17 +6,20 @@ from .controllers import BaseController, ImagesController, AuthorizationControll
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Auth-Token')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH')
+    response.headers.add('Access-Control-Expose-Headers', 'X-Auth-Token')
     return response
 
 
 @app.before_request
 def before_request():
-    token = request.headers.get('authToken')
-    is_auth = AuthorizationController.check_auth(token)
-    if not is_auth:
-        return abort(401)
+    if not (request.headers.environ.get('REQUEST_METHOD') == 'OPTIONS' or 'images' in request.path):
+        token = request.headers.get('X-Auth-Token')
+        print(request.headers)
+        is_auth = AuthorizationController.check_auth(token)
+        if not is_auth:
+            return abort(401)
 
 
 @app.errorhandler(404)
