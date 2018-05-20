@@ -183,3 +183,9 @@ class AuthorizationController:
         if auth:
             return token
         return None
+
+
+class CommentaryController:
+    @staticmethod
+    def get_latest_commentary(count_commentary):
+        pass
