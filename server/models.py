@@ -2,7 +2,13 @@ from server import db
 from datetime import datetime
 
 
-class User(db.Model):
+class Mixin:
+    def _field_relationships(self):
+        for rel in db.class_mapper(self.__class__).relationships._data.keys():
+            yield rel
+
+
+class User(db.Model, Mixin):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -11,7 +17,7 @@ class User(db.Model):
     phone = db.Column(db.String)
 
 
-class Product(db.Model):
+class Product(db.Model, Mixin):
     __tablename__ = 'products'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,13 +27,16 @@ class Product(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     deleted_at = db.Column(db.DateTime, default=None)
     bought_at = db.Column(db.DateTime, default=None)
-    image_hash = db.Column(db.String(255), db.ForeignKey('images.hash'))
 
-    user = db.relationship('User')
+    image_hash = db.Column(db.String(255), db.ForeignKey('images.hash'))
+    user = db.relationship('User', primaryjoin='Product.user_id == User.id')
     image = db.relationship('Image')
 
+    bought_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    buyer = db.relationship('User', primaryjoin='Product.bought_by == User.id')
 
-class Commentary(db.Model):
+
+class Commentary(db.Model, Mixin):
     __tablename__ = 'commentaries'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +48,7 @@ class Commentary(db.Model):
     user = db.relationship('User')
 
 
-class Favorite(db.Model):
+class Favorite(db.Model, Mixin):
     __tablename__ = 'favorites'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -50,7 +59,7 @@ class Favorite(db.Model):
     user = db.relationship('User')
 
 
-class Authorization(db.Model):
+class Authorization(db.Model, Mixin):
     __tablename__ = 'authorizations'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -60,7 +69,7 @@ class Authorization(db.Model):
     user = db.relationship('User')
 
 
-class Image(db.Model):
+class Image(db.Model, Mixin):
     __tablename__ = 'images'
     _model_type = 'image'
     id = db.Column(db.Integer, primary_key=True)

@@ -136,6 +136,7 @@ class ImagesController:
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+
 class UserController:
     @staticmethod
     def create_user(data):
@@ -169,7 +170,7 @@ class AuthorizationController:
         is_user = User.query.filter(and_(User.login == login, User.password_hash == password_hash)).one_or_none()
 
         if is_user:
-            token = hashlib.sha1((login + password).encode('utf-8')).hexdigest()
+            token = hashlib.sha1((login + password_hash).encode('utf-8')).hexdigest()
             if not AuthorizationController.check_auth(token):
                 new_auth = Authorization(user=is_user, auth_token=token)
                 db.session.add(new_auth)

@@ -11,10 +11,16 @@ def after_request(response):
     response.headers.add('Access-Control-Expose-Headers', 'X-Auth-Token')
     return response
 
+def accessed_url(path):
+    accessed_url = ['images', 'commentaries', 'products', 'registration', 'auth']
+    for url in accessed_url:
+        if url in path:
+            return True
+    return False
 
 @app.before_request
 def before_request():
-    if not (request.headers.environ.get('REQUEST_METHOD') == 'OPTIONS' or 'images' in request.path):
+    if not (request.headers.environ.get('REQUEST_METHOD') == 'OPTIONS' or accessed_url(request.path)):
         token = request.headers.get('X-Auth-Token')
         print(request.headers)
         is_auth = AuthorizationController.check_auth(token)
@@ -69,9 +75,17 @@ def get_page_image(hash):
 
 @app.route('/authorize', methods=['POST'])
 def authorize_user():
-    data = request.data
+    data = json.loads(request.data.decode('utf-8'))
     auth_result = AuthorizationController.authorize(data)
     if auth_result:
-        return make_response(auth_result)
+        return make_response(jsonify(auth_result))
     return abort(404)
 
+
+@app.route('/registration', methods=['POST'])
+def registration():
+    data = json.loads(request.data.decode('utf-8'))
+    user = UserController.create_user(data)
+    if user:
+        return make_response(jsonify(user))
+    return abort(404)
