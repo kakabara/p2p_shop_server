@@ -156,7 +156,8 @@ class UserController:
                 db.session.add(new_user)
                 db.session.commit()
 
-                return ViewBase.serialize(new_user)
+                return AuthorizationController.authorize({'login': login, 'password': password})
+
         return None
 
 
