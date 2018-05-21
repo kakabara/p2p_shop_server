@@ -6,7 +6,7 @@ import hashlib
 from sqlalchemy import and_
 from werkzeug.utils import secure_filename
 import os
-
+import hashlib
 
 def get_dict_table_name_to_class():
     all_classes = set()
@@ -123,6 +123,7 @@ class ImagesController:
 
     @staticmethod
     def save_image(request):
+        directory_to_save = '/data/p2p-data/images'
         if request.method == 'POST':
             # check if the post request has the file part
             if 'file' not in request.files:
@@ -134,8 +135,17 @@ class ImagesController:
                 return {'error': 'bad request'}
             if file and ImagesController.allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                file_full_path = os.path.join(directory_to_save, filename)
+                file.save(file_full_path)
 
+                hash_file = Hasher.get_hash(file_full_path)
+
+                image = Image(path=file_full_path, hash=hash_file)
+                db.session.add(image)
+                db.session.commit()
+
+                return image
+        return {'error': 'bad request'}
 
 class UserController:
     @staticmethod
@@ -186,8 +196,76 @@ class AuthorizationController:
             return token
         return None
 
+    @staticmethod
+    def get_user_by_token(token):
+        auth = Authorization.query.filter(Authorization.auth_token == token).one_or_none()
+        if auth:
+            return auth.user
+
 
 class CommentaryController:
     @staticmethod
     def get_latest_commentary(count_commentary):
         pass
+
+
+class ProductController:
+    @staticmethod
+    def get_favourite_product(token):
+        user = AuthorizationController.get_user_by_token(token)
+        favorite_products = BaseController.base_get('favorites', None, {'user_id': user.id})
+        products = []
+        for fav in favorite_products:
+            products.append(fav.get('product'))
+        if products:
+            return products
+        return None
+
+    @staticmethod
+    def get_user_product(token):
+        user = AuthorizationController.get_user_by_token(token)
+        products = BaseController.base_get('products', None, {'user_id': user.id})
+        if products:
+            return products
+        return None
+
+    @staticmethod
+    def create_product(request):
+        image = ImagesController.save_image(request)
+        if isinstance(image, dict):
+            return image
+
+        user = AuthorizationController.get_user_by_token(request.headers.get('X-Auth-Token'))
+        data = json.loads(request.form.get('data'))
+        if user:
+            product = Product(name=data.get('name'), description=data.get('description'), user_id=user.id,
+                              price=data.get('price'), image=image)
+
+            db.session.add(product)
+            db.session.commit()
+
+            return ViewBase.serialize(product)
+        return {'error': 'bad_request'}
+
+class Hasher:
+    @staticmethod
+    def get_hash(file):
+        """
+        Get hash from file
+
+        :param file: str; Path to file
+        :return: str
+        """
+
+        blocksize = 65536
+        hasher = hashlib.md5()
+
+        with open(file, 'rb') as afile:
+            buf = afile.read(blocksize)
+            while len(buf) > 0:
+                hasher.update(buf)
+                buf = afile.read(blocksize)
+
+        hasher.update(str(datetime.now()).encode('utf-8'))
+
+        return hasher.hexdigest()

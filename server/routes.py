@@ -1,15 +1,16 @@
 from server import app
 from flask import request, jsonify, json, make_response, abort, send_file
-from .controllers import BaseController, ImagesController, AuthorizationController, UserController
+from .controllers import BaseController, ImagesController, AuthorizationController, UserController, ProductController
 
 
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Auth-Token')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,X-Auth-Token')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH')
     response.headers.add('Access-Control-Expose-Headers', 'X-Auth-Token')
     return response
+
 
 def accessed_url(path):
     accessed_url = ['images', 'commentaries', 'products', 'registration', 'auth']
@@ -17,6 +18,7 @@ def accessed_url(path):
         if url in path:
             return True
     return False
+
 
 @app.before_request
 def before_request():
@@ -89,3 +91,27 @@ def registration():
     if user:
         return make_response(jsonify(user))
     return abort(404)
+
+
+@app.route('/favorites', methods=['GET'])
+def get_favorites():
+    token = request.headers.get('X-Auth-Token')
+    view = ProductController.get_favourite_product(token)
+    if view:
+        return make_response(jsonify(view))
+    return abort(404)
+
+
+@app.route('/user-products', methods=['GET'])
+def user_product():
+    token = request.headers.get('X-Auth-Token')
+    view = ProductController.get_user_product(token)
+    if view:
+        return make_response(jsonify(view))
+    return abort(404)
+
+
+@app.route('/create-product', methods=['GET', 'POST'])
+def create_product():
+    view = ProductController.create_product(request)
+    return make_response(jsonify(view))

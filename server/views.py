@@ -1,3 +1,5 @@
+from datetime import datetime
+
 
 class ViewBase:
     @staticmethod
@@ -6,7 +8,10 @@ class ViewBase:
         if not entity:
             return {}
         for column in entity.__table__.columns:
-            serialized_entity[column.name] = str(getattr(entity, column.name))
+            value = getattr(entity, column.name)
+            if isinstance(value, datetime):
+                value = value.strftime('%Y-%m-%d %H:%M')
+            serialized_entity[column.name] = value
         return serialized_entity
 
     @staticmethod
