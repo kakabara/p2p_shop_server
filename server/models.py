@@ -46,6 +46,9 @@ class Commentary(db.Model, Mixin):
     created_at = db.Column(db.DateTime, default=datetime.now())
     product = db.relationship('Product')
     user = db.relationship('User')
+    answer_id = db.Column(db.Integer, db.ForeignKey('answers.id'))
+
+    answer = db.relationship('Answer')
 
 
 class Favorite(db.Model, Mixin):
@@ -77,4 +80,11 @@ class Image(db.Model, Mixin):
     hash = db.Column(db.String(255), unique=True)
 
 
+class Answer(db.Model, Mixin):
+    __tablename__ = 'answers'
 
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    text = db.Column(db.String)
+
+    user = db.relationship('User')
