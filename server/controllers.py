@@ -1,12 +1,13 @@
 import json
 from .models import *
 from server import db
-from .views import ViewBase
 import hashlib
 from sqlalchemy import and_
 from werkzeug.utils import secure_filename
 import os
 import hashlib
+from .views import ResponseView
+
 
 def get_dict_table_name_to_class():
     all_classes = set()
@@ -63,7 +64,7 @@ class BaseController:
             query = entity_class.query
             query = BaseController.apply_filtered(entity_class, query, filters)
             result = query.all()
-        view = ViewBase.serialize(result)
+        view = ResponseView.get_view(result)
         return view
 
     @staticmethod
@@ -76,7 +77,7 @@ class BaseController:
         result = BaseController.create_entity(entity_class, data)
         db.session.add(result)
         db.session.commit()
-        view = ViewBase.serialize(result)
+        view = ResponseView.get_view(result)
         return view
 
     @staticmethod
@@ -91,7 +92,7 @@ class BaseController:
         result = BaseController.update_entity(entity, data)
         db.session.add(result)
         db.session.commit()
-        view = ViewBase.serialize(result)
+        view = ResponseView.get_view(result)(result)
         return view
 
     @staticmethod
@@ -143,9 +144,9 @@ class ImagesController:
                 image = Image(path=file_full_path, hash=hash_file)
                 db.session.add(image)
                 db.session.commit()
-
                 return image
         return {'error': 'bad request'}
+
 
 class UserController:
     @staticmethod
@@ -162,12 +163,10 @@ class UserController:
                 password_hash = hashlib.sha1(password.encode('utf-8')).hexdigest()
 
                 new_user = User(login=login, password_hash=password_hash, phone=phone)
-
                 db.session.add(new_user)
                 db.session.commit()
 
                 return AuthorizationController.authorize({'login': login, 'password': password})
-
         return None
 
 
@@ -186,7 +185,7 @@ class AuthorizationController:
                 new_auth = Authorization(user=is_user, auth_token=token)
                 db.session.add(new_auth)
                 db.session.commit()
-            return {'authToken': token}
+            return {'authToken': token, 'user_id': is_user.id}
         return None
 
     @staticmethod
@@ -205,7 +204,12 @@ class AuthorizationController:
 
 class CommentaryController:
     @staticmethod
-    def get_latest_commentary(count_commentary):
+    def get_commentary():
+        commentaries = Commentary.query.limit(20).all()
+        if commentaries:
+            view = ResponseView.get_view(commentaries)
+            return view
+        return 404
         pass
 
 
@@ -244,7 +248,7 @@ class ProductController:
             db.session.add(product)
             db.session.commit()
 
-            return ViewBase.serialize(product)
+            return ResponseView.get_view(product)
         return {'error': 'bad_request'}
 
 class Hasher:

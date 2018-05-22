@@ -1,11 +1,13 @@
 from server import db
 from datetime import datetime
+from .views import *
 
 
 class Mixin:
     def _field_relationships(self):
         for rel in db.class_mapper(self.__class__).relationships._data.keys():
             yield rel
+    serializer = ViewBase.serialize
 
 
 class User(db.Model, Mixin):
@@ -37,6 +39,7 @@ class Product(db.Model, Mixin):
 
 
 class Commentary(db.Model, Mixin):
+    serializer = ViewComment.serialize
     __tablename__ = 'commentaries'
 
     id = db.Column(db.Integer, primary_key=True)

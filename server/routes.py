@@ -1,6 +1,7 @@
 from server import app
 from flask import request, jsonify, json, make_response, abort, send_file
-from .controllers import BaseController, ImagesController, AuthorizationController, UserController, ProductController
+from .controllers import BaseController, ImagesController, AuthorizationController, UserController, ProductController,\
+    CommentaryController
 
 
 @app.after_request
@@ -35,6 +36,7 @@ def not_found(error):
     return make_response(jsonify({'error': 'Not Found'}), 404)
 
 
+@app.route('/<entity>/?', methods=['GET'])
 @app.route('/<entity>', methods=['GET'])
 @app.route('/<entity>/', methods=['GET'])
 @app.route('/<entity>/<entity_id>', methods=['GET'])
