@@ -39,6 +39,8 @@ def not_found(error):
 @app.route('/<entity>/?', methods=['GET'])
 @app.route('/<entity>', methods=['GET'])
 @app.route('/<entity>/', methods=['GET'])
+@app.route('/<entity>/<entity_id>/?', methods=['GET'])
+@app.route('/<entity>/<entity_id>/', methods=['GET'])
 @app.route('/<entity>/<entity_id>', methods=['GET'])
 def get_entities(entity: str, entity_id: int = None):
     result = BaseController.base_get(entity, entity_id, request.args)
@@ -48,10 +50,22 @@ def get_entities(entity: str, entity_id: int = None):
         return abort(404)
 
 
+@app.route('/<entity>/<entity_id>/', methods=['DELETE'])
 @app.route('/<entity>/<entity_id>', methods=['DELETE'])
 def delete_entity(entity: str, entity_id: int):
     result = BaseController.base_delete(entity, entity_id)
-    return make_response(jsonify(result))
+    if result:
+        return make_response(jsonify(result))
+    return abort(404)
+    pass
+
+
+@app.route('/products/<entity_id>', methods=['DELETE'])
+def delete_product(entity_id: int):
+    result = ProductController.delete(entity_id)
+    if result:
+        return make_response(jsonify(result))
+    return abort(404)
     pass
 
 

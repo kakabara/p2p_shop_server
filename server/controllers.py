@@ -30,6 +30,8 @@ class BaseController:
     def apply_filtered(entity_class, query, filters: dict):
         for filter_key in filters:
             value = filters[filter_key]
+            if value == '':
+                value = None
             column = getattr(entity_class, filter_key, None)
             filt = getattr(column, '__eq__')(value)
             query = query.filter(filt)
@@ -49,7 +51,6 @@ class BaseController:
     def update_entity(entity, fields: dict):
         for field in fields:
             setattr(entity, field, fields[field])
-        print(1)
         return entity
 
     @staticmethod
@@ -58,8 +59,17 @@ class BaseController:
         #
         if not entity_class:
             return None
+        # convert filters
+        filters = dict(filters)
+        for k in filters:
+            if isinstance(filters[k], list):
+                filters[k] = filters[k][0]
         if entity_id:
-            result = entity_class.query.filter(entity_class.id == entity_id).one_or_none()
+            query = entity_class.query
+
+            filters['id'] = entity_id
+            query = BaseController.apply_filtered(entity_class, query, filters)
+            result = query.one_or_none()
         else:
             query = entity_class.query
             query = BaseController.apply_filtered(entity_class, query, filters)
@@ -92,7 +102,7 @@ class BaseController:
         result = BaseController.update_entity(entity, data)
         db.session.add(result)
         db.session.commit()
-        view = ResponseView.get_view(result)(result)
+        view = ResponseView.get_view(result)
         return view
 
     @staticmethod
@@ -102,9 +112,11 @@ class BaseController:
         if not entity_class:
             return None
         entity = entity_class.query.filter(entity_class.id == entity_id).one_or_none()
-        db.session.delete(entity)
-        db.session.commit()
-        return {"status": "done"}
+        if entity:
+            db.session.delete(entity)
+            db.session.commit()
+            return {"status": "done"}
+        return None
 
 
 class ImagesController:
@@ -181,18 +193,21 @@ class AuthorizationController:
 
         if is_user:
             token = hashlib.sha1((login + password_hash).encode('utf-8')).hexdigest()
-            if not AuthorizationController.check_auth(token):
+            auth = AuthorizationController.check_auth(token)
+            if not auth:
                 new_auth = Authorization(user=is_user, auth_token=token)
                 db.session.add(new_auth)
                 db.session.commit()
-            return {'authToken': token, 'user_id': is_user.id}
+                return new_auth.serializer()
+            else:
+                return auth.serializer()
         return None
 
     @staticmethod
     def check_auth(token):
         auth = Authorization.query.filter(Authorization.auth_token == token).one_or_none()
         if auth:
-            return token
+            return auth
         return None
 
     @staticmethod
@@ -215,9 +230,23 @@ class CommentaryController:
 
 class ProductController:
     @staticmethod
+    def delete(product_id):
+        product = Product.query.filter(Product.id == product_id).one_or_none()
+        if product:
+            product.deleted_at = datetime.now()
+            db.session.add(product)
+            db.session.commit()
+            commentaries = Commentary.query.filter(Commentary.product_id == product_id).all()
+            for comment in commentaries:
+                db.session.delete(comment)
+                db.session.commit()
+            return {'result': 'done'}
+        return None
+
+    @staticmethod
     def get_favourite_product(token):
         user = AuthorizationController.get_user_by_token(token)
-        favorite_products = BaseController.base_get('favorites', None, {'user_id': user.id})
+        favorite_products = BaseController.base_get('favorites', None, {'user_id': user.id, 'deleted_at': None})
         products = []
         for fav in favorite_products:
             products.append(fav.get('product'))

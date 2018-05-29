@@ -30,7 +30,7 @@ class Product(db.Model, Mixin):
     deleted_at = db.Column(db.DateTime, default=None)
     bought_at = db.Column(db.DateTime, default=None)
 
-    image_hash = db.Column(db.String(255), db.ForeignKey('images.hash'))
+    image_hash = db.Column(db.String(255), db.ForeignKey('images.hash'), nullable=True)
     user = db.relationship('User', primaryjoin='Product.user_id == User.id')
     image = db.relationship('Image')
 
@@ -89,5 +89,6 @@ class Answer(db.Model, Mixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     text = db.Column(db.String)
+    # commentary_id = db.Column(db.Integer, db.ForeignKey('commentaries.id'), nullable=False)
 
     user = db.relationship('User')
